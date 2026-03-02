@@ -1,0 +1,14 @@
+{
+    "name": "com.jeanlab.addressable-extension.Runtime",
+    "rootNamespace": "AddressableExtension",
+    "references": [],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": true
+}

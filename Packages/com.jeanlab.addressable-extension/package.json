@@ -1,0 +1,27 @@
+{
+  "name": "com.jeanlab.addressable-extension",
+  "version": "1.0.0",
+  "displayName": "Addressable Extension",
+  "description": "Auto-generates AddressableExtension static class with Label and Address constants using Source Generator",
+  "unity": "2021.3",
+  "license": "MIT",
+  "documentationUrl": "https://github.com/kwj7848/AddressableExtension#readme",
+  "changelogUrl": "https://github.com/kwj7848/AddressableExtension/blob/main/Packages/com.jeanlab.addressable-extension/CHANGELOG.md",
+  "licensesUrl": "https://github.com/kwj7848/AddressableExtension/blob/main/Packages/com.jeanlab.addressable-extension/LICENSE.md",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/kwj7848/AddressableExtension.git"
+  },
+  "dependencies": {
+    "com.unity.addressables": "1.19.0"
+  },
+  "keywords": [
+    "addressable",
+    "source-generator",
+    "autocomplete"
+  ],
+  "author": {
+    "name": "JeanLab",
+    "email": "kwj7848@gmail.com"
+  }
+}
