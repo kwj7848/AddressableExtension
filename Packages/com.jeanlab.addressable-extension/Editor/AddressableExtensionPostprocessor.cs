@@ -358,7 +358,6 @@ namespace AddressableExtension.Editor
                     _generatedLabels.Add(label);
             }
 
-            SaveGeneratedKeys();
         }
 
         private static void SaveGeneratedKeys()
