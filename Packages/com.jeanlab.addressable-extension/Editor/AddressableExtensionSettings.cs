@@ -2,8 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Reflection;
-using System.Text.RegularExpressions;
 using UnityEditor;
 using UnityEditor.AddressableAssets;
 using UnityEditor.AddressableAssets.Settings;
@@ -167,7 +165,7 @@ namespace AddressableExtension.Editor
                 foreach (var entry in group.entries)
                 {
                     string assetName = Path.GetFileNameWithoutExtension(entry.AssetPath);
-                    string sanitized = SanitizeLabelName(assetName);
+                    string sanitized = AddressableAutoSimplify.SanitizeName(assetName);
                     if (string.IsNullOrEmpty(sanitized) || entry.address == sanitized)
                     {
                         existingAddresses.Add(entry.address);
@@ -210,7 +208,7 @@ namespace AddressableExtension.Editor
             var existingLabels = new HashSet<string>();
             foreach (var label in settings.GetLabels())
             {
-                string sanitized = SanitizeLabelName(label);
+                string sanitized = AddressableAutoSimplify.SanitizeName(label);
                 if (sanitized == label)
                 {
                     existingLabels.Add(label);
@@ -251,18 +249,6 @@ namespace AddressableExtension.Editor
             return changes;
         }
 
-        private static string SanitizeLabelName(string name)
-        {
-            if (string.IsNullOrEmpty(name)) return "_";
-            var sanitized = Regex.Replace(name, "[^a-zA-Z0-9_]", "_");
-            sanitized = Regex.Replace(sanitized, "_+", "_");
-            sanitized = sanitized.Trim('_');
-            if (sanitized.Length > 0 && char.IsDigit(sanitized[0]))
-                sanitized = "_" + sanitized;
-            if (string.IsNullOrEmpty(sanitized))
-                return "_";
-            return sanitized;
-        }
     }
 
     internal class AddressableExtensionSetupWindow : EditorWindow
@@ -373,13 +359,6 @@ namespace AddressableExtension.Editor
             var settings = AddressableAssetSettingsDefaultObject.Settings;
             if (settings == null) return;
 
-            var renameLabelMethod = typeof(AddressableAssetSettings).GetMethod(
-                "RenameLabel",
-                BindingFlags.Instance | BindingFlags.NonPublic,
-                null,
-                new[] { typeof(string), typeof(string), typeof(bool) },
-                null);
-
             foreach (var change in _changes.Where(c => c.category == "Address"))
             {
                 foreach (var group in settings.groups)
@@ -398,8 +377,8 @@ namespace AddressableExtension.Editor
 
             foreach (var change in _changes.Where(c => c.category == "Label"))
             {
-                if (renameLabelMethod != null)
-                    renameLabelMethod.Invoke(settings, new object[] { change.oldValue, change.newValue, true });
+                if (AddressableAutoSimplify.RenameLabelMethod != null)
+                    AddressableAutoSimplify.RenameLabelMethod.Invoke(settings, new object[] { change.oldValue, change.newValue, true });
             }
 
             int addrCount = _changes.Count(c => c.category == "Address");

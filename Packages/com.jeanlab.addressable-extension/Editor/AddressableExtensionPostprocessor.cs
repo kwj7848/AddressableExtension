@@ -322,6 +322,7 @@ namespace AddressableExtension.Editor
             foreach (var group in settings.groups)
             {
                 if (group == null) continue;
+                if (AddressableReferencedOnlyGroupHandler.IsReferencedOnlyGroup(group)) continue;
                 foreach (var entry in group.entries)
                 {
                     if (AssetDatabase.IsValidFolder(entry.AssetPath))
