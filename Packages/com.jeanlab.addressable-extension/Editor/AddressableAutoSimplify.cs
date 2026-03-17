@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -15,11 +14,11 @@ namespace AddressableExtension.Editor
     [InitializeOnLoad]
     internal static class AddressableAutoSimplify
     {
-        private static MethodInfo _renameLabelMethod;
+        internal static readonly MethodInfo RenameLabelMethod;
 
         static AddressableAutoSimplify()
         {
-            _renameLabelMethod = typeof(AddressableAssetSettings).GetMethod(
+            RenameLabelMethod = typeof(AddressableAssetSettings).GetMethod(
                 "RenameLabel",
                 BindingFlags.Instance | BindingFlags.NonPublic,
                 null,
@@ -39,6 +38,9 @@ namespace AddressableExtension.Editor
                 {
                     settings.OnModification -= OnSettingsModify;
                     settings.OnModification += OnSettingsModify;
+
+                    if (AddressableExtensionSettingsManager.Data.enableNames)
+                        SanitizeModifiedAddresses(settings);
                 }
             };
         }
@@ -67,8 +69,28 @@ namespace AddressableExtension.Editor
 
                 foreach (var entry in entries)
                 {
+                    if (entry.parentGroup != null && AddressableReferencedOnlyGroupHandler.IsReferencedOnlyGroup(entry.parentGroup))
+                    {
+                        existingAddresses.Add(entry.address);
+                        continue;
+                    }
                     SimplifyAddress(entry, existingAddresses);
                     existingAddresses.Add(entry.address);
+                }
+            }
+            else if (evt == ModificationEvent.EntryModified)
+            {
+                if (!AddressableExtensionSettingsManager.Data.enableNames)
+                    return;
+
+                if (!_sanitizePending)
+                {
+                    _sanitizePending = true;
+                    EditorApplication.delayCall += () =>
+                    {
+                        _sanitizePending = false;
+                        SanitizeModifiedAddresses(settings);
+                    };
                 }
             }
             else if (evt == ModificationEvent.LabelAdded)
@@ -119,9 +141,9 @@ namespace AddressableExtension.Editor
                 Debug.Log($"[Addressable Extension] Label \"{labelName}\" → \"{finalName}\" ({charList} cannot be used in C# identifiers, replaced with '_' for code autocomplete)");
             }
 
-            if (_renameLabelMethod != null)
+            if (RenameLabelMethod != null)
             {
-                _renameLabelMethod.Invoke(settings, new object[] { labelName, finalName, true });
+                RenameLabelMethod.Invoke(settings, new object[] { labelName, finalName, true });
             }
             else
             {
@@ -129,7 +151,66 @@ namespace AddressableExtension.Editor
             }
         }
 
-        private static string SanitizeName(string name)
+        private static bool _sanitizePending;
+        private static bool _isSanitizing;
+
+        private static void SanitizeModifiedAddresses(AddressableAssetSettings settings)
+        {
+            if (settings == null || _isSanitizing) return;
+
+            _isSanitizing = true;
+            try
+            {
+                var existingAddresses = new HashSet<string>();
+
+                // First pass: collect all addresses
+                foreach (var group in settings.groups)
+                {
+                    if (group == null) continue;
+                    foreach (var entry in group.entries)
+                        existingAddresses.Add(entry.address);
+                }
+
+                bool changed = false;
+                foreach (var group in settings.groups)
+                {
+                    if (group == null) continue;
+                    if (AddressableReferencedOnlyGroupHandler.IsReferencedOnlyGroup(group)) continue;
+
+                    foreach (var entry in group.entries)
+                    {
+                        string sanitized = SanitizeName(entry.address);
+                        if (sanitized == entry.address) continue;
+
+                        existingAddresses.Remove(entry.address);
+                        string newAddress = sanitized;
+                        if (existingAddresses.Contains(newAddress))
+                        {
+                            int suffix = 1;
+                            while (existingAddresses.Contains(newAddress))
+                            {
+                                newAddress = $"{sanitized}_{suffix}";
+                                suffix++;
+                            }
+                        }
+
+                        Debug.Log($"[Addressable Extension] Address \"{entry.address}\" → \"{newAddress}\" (auto-sanitized)");
+                        entry.SetAddress(newAddress);
+                        existingAddresses.Add(newAddress);
+                        changed = true;
+                    }
+                }
+
+                if (changed)
+                    AssetDatabase.SaveAssets();
+            }
+            finally
+            {
+                _isSanitizing = false;
+            }
+        }
+
+        internal static string SanitizeName(string name)
         {
             if (string.IsNullOrEmpty(name))
                 return "_";
@@ -205,6 +286,7 @@ namespace AddressableExtension.Editor
             foreach (var group in settings.groups)
             {
                 if (group == null) continue;
+                if (AddressableReferencedOnlyGroupHandler.IsReferencedOnlyGroup(group)) continue;
 
                 foreach (var entry in group.entries.ToList())
                 {
