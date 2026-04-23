@@ -1,7 +1,29 @@
 # Addressable Extension
 
-A Unity package that auto-generates C# constants from Addressable asset Addresses and Labels.
-Uses a Source Generator to create `AddressableNames` and `AddressableLabels` classes at compile time, enabling code autocomplete and eliminating string typos when working with Addressables.
+A Unity package for reducing manual Addressables metadata maintenance.
+
+Instead of treating Addressable addresses and labels as hand-maintained tracked metadata, this package standardizes them into a reproducible form and generates strongly-typed C# accessors via a Roslyn Source Generator.
+
+This helps teams avoid manually managing string-based Addressables state in Git, keep naming consistent, and use addresses and labels from code without relying on raw strings.
+
+## Why This Exists
+
+In many Unity projects, Addressable addresses and labels gradually become hand-maintained metadata:
+
+- They are edited manually
+- They drift across contributors
+- They create unnecessary review and merge overhead
+- They are often consumed from code as fragile raw strings
+
+Addressable Extension is built around a different approach: addresses and labels should be normalized by rule, treated as reproducible derived state where possible, and exposed to code through compile-time generated C# accessors.
+
+## How Generated Code Works
+
+Addressable Extension does not write generated `.cs` files into your project.
+
+`AddressableNames` and `AddressableLabels` are emitted at compile time by a Roslyn Source Generator. They are available to your C# code and IDE autocomplete, but the generated source itself is not stored as hand-maintained source in your repository.
+
+This keeps generated Addressables accessors out of Git while still giving you strongly-typed, autocomplete-friendly constants in code.
 
 ## Requirements
 
@@ -16,7 +38,7 @@ Install via Unity Package Manager using a Git URL:
 2. Click the **+** button (top-left) > **Add package from git URL...**
 3. Enter the following URL:
 
-```
+```text
 https://github.com/kwj7848/AddressableExtension.git?path=Packages/com.jeanlab.addressable-extension
 ```
 
@@ -49,10 +71,10 @@ Open **Window > Asset Management > Addressables Extension > Settings**:
 
 ## Repository Structure
 
-```
+```text
 Packages/
 ├── com.jeanlab.addressable-extension/            # UPM package (installed via Package Manager)
-└── com.jeanlab.addressable-extension.generator/   # Source Generator source code (reference only)
+└── com.jeanlab.addressable-extension.generator/  # Source Generator source code (reference only)
 ```
 
 ## License
